@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -e
+
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+MASTER='master'
+INTEGRATION='release-*'
+DEVELOP='develop'
+
+if [[ $BRANCH == $MASTER ]]; then
+  STAGE="prod"
+  AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID_PROD
+  AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY_PROD
+  AWS_REGION=$AWS_REGION_PROD
+  AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID_PROD
+elif [[ $BRANCH == $INTEGRATION ]]; then
+  STAGE="staging"
+  AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID_DEV
+  AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY_DEV
+  AWS_REGION=$AWS_REGION_INT
+  AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID_INT
+elif [[ $BRANCH == $DEVELOP ]]; then
+  STAGE="dev"
+  AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID_DEV
+  AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY_DEV
+  AWS_REGION=$AWS_REGION_DEV
+  AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID_DEV
+fi
+
+if [ -z ${STAGE+x} ]; then
+  echo "Not deploying changes"
+  exit 0
+fi
+
+echo "deploy"
+
+export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+
+echo "deploy s3 ${STAGE}"
+aws s3 sync ./build/ s3://${STAGE}-assets-bybbf-com --delete
